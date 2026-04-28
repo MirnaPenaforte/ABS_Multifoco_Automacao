@@ -1,0 +1,52 @@
+# ─── Python ───────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# ─── Ambientes virtuais ────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ─── Variáveis de ambiente / segredos ─────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Logs ─────────────────────────────────────────────────
+logs/
+*.log
+
+# ─── Saídas geradas ───────────────────────────────────────
+output/
+*.csv
+*.xlsx
+*.xls
+import/
+
+# ─── Docker ───────────────────────────────────────────────
+# (docker-compose.yml e Dockerfile SÃO versionados)
+
+# ─── IDEs / Editores ──────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── Sistema operacional ──────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Mypy / pytest / coverage ─────────────────────────────
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/

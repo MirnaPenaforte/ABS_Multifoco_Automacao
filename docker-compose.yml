@@ -1,8 +1,8 @@
 services:
   abs-app:
     build: .
-    image: abs-appv1:latest
-    container_name: abs-appv1
+    image: abs-app:latest
+    container_name: abs-app
     env_file:
       - .env
     environment:
