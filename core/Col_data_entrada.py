@@ -31,7 +31,7 @@ def preencher_data_entrada(df_final):
             df_anterior = pd.read_excel(arquivo_anterior_xlsx)
             
             if 'EAN' in df_anterior.columns:
-                df_anterior['EAN'] = df_anterior['EAN'].astype(str).str.strip()
+                df_anterior['EAN'] = df_anterior['EAN'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
             if 'Estoque' in df_anterior.columns:
                 df_anterior['Estoque'] = pd.to_numeric(df_anterior['Estoque'], errors='coerce').fillna(0)
 
@@ -66,14 +66,14 @@ def preencher_data_entrada(df_final):
         mapa_estoque_antigo = {}
         if df_anterior is not None and not df_anterior.empty:
             for idx, row in df_anterior.iterrows():
-                ean_str = str(row['EAN']).strip()
+                ean_str = str(row['EAN']).replace('.0', '').strip()
                 mapa_datas_antigas[ean_str] = row.get('Data Entrada', data_hoje)
                 mapa_estoque_antigo[ean_str] = row.get('Estoque', 0)
 
         # 4. Avaliar cada linha do dataframe final com as regras de negócio
         datas_entrada = []
         for idx, row in df_final.iterrows():
-            ean = str(row['EAN']).strip()
+            ean = str(row['EAN']).replace('.0', '').strip()
             estoque_final_atual = float(row['Estoque']) if pd.notna(row['Estoque']) else 0
             
             data_decidida = data_hoje # Data padrão de entrada
@@ -125,7 +125,7 @@ def _mapear_lotes(df_estoque):
         
     for index, row in df_estoque.iterrows():
         try:
-            ean = str(row[1]).strip()
+            ean = str(row[1]).replace('.0', '').strip()
             lote = str(row[2]).strip()
             
             if pd.notna(row[1]) and ean:

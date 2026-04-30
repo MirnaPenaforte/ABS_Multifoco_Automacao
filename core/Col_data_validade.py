@@ -10,7 +10,7 @@ def processar_validade_estoque(df_estoque):
 
     try:
         #Organização de string
-        df_estoque[INDICE_EAN] = df_estoque[INDICE_EAN].astype(str).str.strip()
+        df_estoque[INDICE_EAN] = df_estoque[INDICE_EAN].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
 
         #Conversão de Data
         # O 'dayfirst=True' é vital para o padrão brasileiro (DD/MM/AAAA)

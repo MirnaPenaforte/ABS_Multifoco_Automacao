@@ -19,7 +19,7 @@ def calcular_faturamento_atual(df_vendas):
         df_vendas = df_vendas[~df_vendas[INDICE_CFOP].isin(['6202', '5202'])]
 
         # 1. Limpeza inicial do EAN
-        df_vendas[INDICE_EAN] = df_vendas[INDICE_EAN].astype(str).str.strip()
+        df_vendas[INDICE_EAN] = df_vendas[INDICE_EAN].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
 
         # 2. Tratamento Numérico
         # Quantidade como Inteiro

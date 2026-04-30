@@ -10,7 +10,7 @@ def processar_estoque_agrupado(df_estoque):
 
     try:
         #Limpar espaços e garantir que o EAN seja string
-        df_estoque[INDICE_EAN] = df_estoque[INDICE_EAN].astype(str).str.strip()
+        df_estoque[INDICE_EAN] = df_estoque[INDICE_EAN].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
 
         # 1. Garantir que os dados de estoque sejam numéricos
         df_estoque[INDICE_ESTOQUE] = pd.to_numeric(df_estoque[INDICE_ESTOQUE], errors='coerce').fillna(0)

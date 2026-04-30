@@ -13,7 +13,7 @@ def extrair_preco_custo(df_estoque):
         df_custo.columns = ['EAN', 'Preço Custo']
         
         # 2. Limpeza do EAN (sempre necessária)
-        df_custo['EAN'] = df_custo['EAN'].astype(str).str.strip()
+        df_custo['EAN'] = df_custo['EAN'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
         
         # 3. Tratamento do Preço como TEXTO EXATO
         # Forçamos para string e limpamos apenas espaços nas pontas.
