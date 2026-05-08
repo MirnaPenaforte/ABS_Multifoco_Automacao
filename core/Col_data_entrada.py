@@ -58,8 +58,12 @@ def preencher_data_entrada(df_final):
         df_est_antigo = pd.concat(dfs_estoque_antigo, ignore_index=True) if dfs_estoque_antigo else pd.DataFrame()
 
         # Mapeando histórico de lotes: um dicionário para cada CSV com EAN -> Set de Lotes
-        lotes_atual = _mapear_lotes(df_est_atual)   
-        lotes_antigo = _mapear_lotes(df_est_antigo) 
+        lotes_atual = _mapear_lotes(df_est_atual)
+        lotes_antigo = _mapear_lotes(df_est_antigo)
+        
+        # Flag: indica se há um backup real para comparar lotes.
+        # Sem baseline, não é possível afirmar que entrou produto novo.
+        tem_baseline_lotes = not df_est_antigo.empty
         
         # Mapeando estado do XLSX passado:
         mapa_datas_antigas = {}
@@ -88,12 +92,16 @@ def preencher_data_entrada(df_final):
                 estoque_subiu = estoque_final_atual > estoque_antigo
                 
                 # B) A lista atual de lotes desse EAN tem algum lote que a do CSV antigo não tinha
+                #    Só é válida se houver um backup real para comparar (tem_baseline_lotes).
+                #    Sem baseline (ex: virada de mês com backups limpos), considera False
+                #    para não atualizar a data indevidamente.
                 conj_atual = lotes_atual.get(ean, set())
                 conj_antigo = lotes_antigo.get(ean, set())
-                
-                lote_diferente_entrou = len(conj_atual - conj_antigo) > 0
+                lote_diferente_entrou = tem_baseline_lotes and len(conj_atual - conj_antigo) > 0
                 
                 # C) Validação principal:
+                #    Só atualiza para hoje se há evidência REAL de entrada
+                #    (estoque subiu E lote novo confirmado por comparação com backup)
                 if estoque_subiu and lote_diferente_entrou:
                     data_decidida = data_hoje
                 else:
@@ -149,28 +157,43 @@ def _buscar_csv_estoque_anterior():
 def _buscar_csvs_estoque_anteriores():
     """
     Busca os arquivos ESTOQUE*.csv de backup (filial e Matriz) feitos pelas importações diárias,
-    em data anterior à de hoje, para comparação de lotes.
-    Retorna uma lista de caminhos encontrados.
+    para comparação de lotes com o estado atual.
+
+    Estratégia:
+    - Os backups são salvos com sufixo de data/hora: ESTOQUE_DD-MM-YYYY_HHhMMm.csv
+    - Busca todos os backups existentes (ESTOQUE* e ESTOQUE_Matriz*).
+    - Exclui apenas o arquivo mais recente de hoje (que foi gerado na execução atual).
+    - Retorna os arquivos do backup imediatamente anterior (pode ser de hoje ou de dia anterior).
     """
     dir_backups = os.path.join('imports', 'backups')
-    hoje_str = datetime.now().strftime('%d-%m-%Y')
-    
-    # Busca ESTOQUE.csv e ESTOQUE_Matriz*.csv nos backups
+
+    # Padrão corrigido: backups têm sufixo de data/hora (ex: ESTOQUE_08-05-2026_11h30m.csv)
     padroes = [
-        os.path.join(dir_backups, '*', '*', 'ESTOQUE.csv'),
-        os.path.join(dir_backups, '*', '*', 'ESTOQUE_Matriz*.csv'),
+        os.path.join(dir_backups, '*', '*', 'ESTOQUE_*.csv'),
+        os.path.join(dir_backups, '*', '*', 'ESTOQUE_Matriz_*.csv'),
     ]
-    
-    arquivos_antigos = []
+
+    todos_arquivos = []
     for padrao in padroes:
-        for f in glob.glob(padrao):
-            if hoje_str not in f:  # Exclui backups de hoje
-                arquivos_antigos.append(f)
-    
-    if not arquivos_antigos:
+        todos_arquivos.extend(glob.glob(padrao))
+
+    if not todos_arquivos:
         return []
-    
-    # Ordena por data de modificação e retorna os mais recentes
-    arquivos_antigos.sort(key=os.path.getmtime)
-    # Retorna os arquivos do backup mais recente (pode ser ESTOQUE + ESTOQUE_Matriz)
-    return arquivos_antigos
+
+    # Ordena por data de modificação (mais antigo → mais recente)
+    todos_arquivos.sort(key=os.path.getmtime)
+
+    # Identifica e remove o arquivo mais recente de cada tipo (gerado na execução atual)
+    # para que a comparação seja com o estado ANTERIOR a esta execução.
+    arquivos_estoque    = [f for f in todos_arquivos if 'Matriz' not in os.path.basename(f)]
+    arquivos_matriz     = [f for f in todos_arquivos if 'Matriz' in os.path.basename(f)]
+
+    resultado = []
+    # Pega todos exceto o último de cada tipo (o mais recente = execução atual)
+    if len(arquivos_estoque) > 1:
+        resultado.extend(arquivos_estoque[:-1])
+    if len(arquivos_matriz) > 1:
+        resultado.extend(arquivos_matriz[:-1])
+
+    # Se só há um arquivo de cada tipo (primeira execução real), não há baseline
+    return resultado
